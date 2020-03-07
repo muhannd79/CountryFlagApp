@@ -1,8 +1,10 @@
-package org.fooshtech.countryflagapp;
+package org.fooshtech.countryflagapp.view;
 
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.os.Bundle;
+
+import org.fooshtech.countryflagapp.R;
 
 public class MainActivity extends AppCompatActivity {
 
