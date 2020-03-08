@@ -3,12 +3,24 @@ package org.fooshtech.countryflagapp.viewmodel;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 
+import org.fooshtech.countryflagapp.model.CountriesService;
 import org.fooshtech.countryflagapp.model.CountryModel;
 
 import java.util.ArrayList;
 import java.util.List;
 
+import io.reactivex.Scheduler;
+import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.disposables.CompositeDisposable;
+import io.reactivex.disposables.Disposable;
+import io.reactivex.observers.DisposableSingleObserver;
+import io.reactivex.schedulers.Schedulers;
+
 public class ListViewModel extends ViewModel {
+
+    private CountriesService countriesService = CountriesService.getInstance();
+
+    private CompositeDisposable disposable = new CompositeDisposable();
 
     public MutableLiveData<List<CountryModel>> countries = new MutableLiveData<List<CountryModel>>();
 
@@ -16,27 +28,46 @@ public class ListViewModel extends ViewModel {
 
     public MutableLiveData<Boolean> loading = new MutableLiveData<Boolean>();
 
-    public void refresh(){
+    public void refresh() {
 
         fetchCountries();
     }
 
-    private void fetchCountries(){
+    private void fetchCountries() {
 
-        CountryModel country1 = new CountryModel("USA","Washington","");
-        CountryModel country2= new CountryModel("Iraq","Baghdad","");
-        CountryModel country3 = new CountryModel("India","India","");
+        loading.setValue(true);
+        disposable.add(
+                countriesService.getCountries()
+                        .subscribeOn(Schedulers.newThread())
+                        .observeOn(AndroidSchedulers.mainThread())
+                        .subscribeWith(new DisposableSingleObserver<List<CountryModel>>() {
 
-        List<CountryModel> list = new ArrayList<>();
-        list.add(country1);
-        list.add(country2);
-        list.add(country3);
+                            @Override
+                            public void onSuccess(List<CountryModel> countryModels) {
 
-        countries.setValue(list);
-        countryLoadError.setValue(false);
-        loading.setValue(false);
+                                countries.setValue(countryModels);
+                                countryLoadError.setValue(false);
+                                loading.setValue(false);
+                            }
+
+                            @Override
+                            public void onError(Throwable e) {
+
+                                countryLoadError.setValue(true);
+                                loading.setValue(false);
+                                e.printStackTrace();
+
+                            }
+                        })
+        );
+
 
     }
 
 
+    @Override
+    protected void onCleared() {
+        super.onCleared();
+        disposable.clear();
+    }
 }
